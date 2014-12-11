@@ -1,4 +1,3 @@
-local inspect = require('inspect')
 local vida = require('vida')
 
 local fast = vida.source([[
