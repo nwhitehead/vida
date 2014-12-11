@@ -1,5 +1,7 @@
 local os = require('os')
 local ffi = require('ffi')
+local md5 = require('md5')
+local path = require('path')
 
 local vida = {}
 
@@ -12,17 +14,18 @@ end
 
 vida.useLocalCopy = true
 vida.saveLocalCopy = true
-vida.cachePath = 'cache'
+vida.cachePath = '.vidacache'
 
-function vida.source(interface, implementation)
-    name = 'test'
+function vida.source(interface, implementation, name)
+    local src = interface .. '\n' .. implementation
+    name = name or md5.hash(src)
     -- First interpret interface using FFI
     ffi.cdef(interface)
     -- Check for local copy of shared library
-    local locallib = name .. ".so"
+    local locallib = path.join(vida.cachePath, name .. ".so")
     if vida.useLocalCopy then
         if file_exists(locallib) then
-            return ffi.load("./" .. locallib)
+            return ffi.load(locallib)
         end
     end
     -- Create names
@@ -33,8 +36,7 @@ function vida.source(interface, implementation)
     -- Write C contents
     -- Note: includes interface to avoid inconsistencies
     local file = io.open(cname, 'w')
-    file:write(interface)
-    file:write(implementation)
+    file:write(src)
     file:close()
     -- Compile
     local r
@@ -45,6 +47,8 @@ function vida.source(interface, implementation)
     if r ~= 0 then error('Error during link', 2) end
     -- Save a local copy
     if vida.saveLocalCopy then
+        r = os.execute(string.format('mkdir -p %s', vida.cachePath))
+        if r ~= 0 then error('Error creating cache path', 2) end
         r = os.execute(string.format('cp %s %s', libname, locallib))
         if r ~= 0 then error('Error saving local copy', 2) end
     end

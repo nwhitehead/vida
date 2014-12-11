@@ -3,9 +3,8 @@
 local path = {}
 
 function path.join(...)
-    local res = arg[1]
-    for i = 2, #arg do
-    end
+    local arg = {...}
+    return table.concat(arg, '/')
 end
 
 return path
