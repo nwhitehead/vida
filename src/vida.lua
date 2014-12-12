@@ -15,12 +15,14 @@ end
 vida.useLocalCopy = true
 vida.saveLocalCopy = true
 vida.cachePath = '.vidacache'
+vida.compiler = 'clang'
+vida.compilerFlags = '-O3'
 
-function vida.source(interface, implementation, name)
-    local src = interface .. '\n' .. implementation
-    name = name or md5.hash(src)
+function vida.source(interface, implementation)
     -- First interpret interface using FFI
     ffi.cdef(interface)
+    local src = implementation
+    local name = md5.hash(src)
     -- Check for local copy of shared library
     local locallib = path.join(vida.cachePath, name .. ".so")
     if vida.useLocalCopy then
@@ -40,10 +42,10 @@ function vida.source(interface, implementation, name)
     file:close()
     -- Compile
     local r
-    r = os.execute(string.format('clang -fpic -c %s -o %s', cname, oname))
+    r = os.execute(string.format('%s %s -fpic -c %s -o %s', vida.compiler, vida.compilerFlags, cname, oname))
     if r ~= 0 then error('Error during compile', 2) end
     -- Link to shared library
-    r = os.execute(string.format('clang -shared %s -o %s', oname, libname))
+    r = os.execute(string.format('%s -shared %s -o %s', vida.compiler, oname, libname))
     if r ~= 0 then error('Error during link', 2) end
     -- Save a local copy
     if vida.saveLocalCopy then

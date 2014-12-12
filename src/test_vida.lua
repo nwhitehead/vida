@@ -33,6 +33,7 @@ test("multiple functions and types", function()
         int add(int, int);
         uchar mult(uchar, uchar);
     ]],[[
+        typedef unsigned char uchar;
         int add(int a, int b) {
             return a + b;
         }
