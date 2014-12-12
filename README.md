@@ -6,12 +6,12 @@ right from your Lua code.
 ## Requirements
 
 * Linux only (for now)
-* LuaJit 2.0+
+* LuaJIT 2.0+
 * A working copy of clang or gcc available from the command line
 
 ## How to use
 
-You include the vida module as normal. Call `vida.source` to provide
+You include the Vida module as normal. Call `vida.source` to provide
 C code together with a C interface that will be passed along to
 FFI. The return value will be the FFI namespace of the loaded dynamic
 library.
@@ -45,7 +45,7 @@ later runs.
 
 ## Advantages
 
-There are several reasons to use vida. 
+There are several reasons to use Vida. 
 
 * No complicated build steps needed, everything is in Lua files.
 * Performance of simple C functions often 6x faster than LuaJIT
