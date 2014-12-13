@@ -20,9 +20,9 @@ vida.compiler = 'clang'
 vida.compilerFlags = '-O3 -fpic -c'
 vida.linkerFlags = '-shared'
 if ffi.os == 'Windows' then
-	vida.compiler = 'cl'
-	vida.compilerFlags = '/nologo /O2 /c'
-	vida.linkerFlags = '/nologo /link /DLL'
+    vida.compiler = 'cl'
+    vida.compilerFlags = '/nologo /O2 /c'
+    vida.linkerFlags = '/nologo /link /DLL'
 end
 
 -- Use .so suffix on Linux and Mac, .dll on Windows
@@ -31,7 +31,7 @@ local libsuffix = '.so'
 local objsuffix = '.o'
 if ffi.os == 'Windows' then
     libsuffix = '.dll'
-	objsuffix = '.obj'
+    objsuffix = '.obj'
 end
 
 -- Fixed header for C source to simplify exports
@@ -74,36 +74,36 @@ function vida.source(interface, implementation)
     file:close()
     -- Compile
     local r
-	if ffi.os == 'Windows' then
-		r = os.execute(string.format('%s %s %s /Fo%s >nul', vida.compiler, vida.compilerFlags, cname, oname))
-		if r ~= 0 then error('Error during compile', 2) end
-		r = os.execute(string.format('%s %s %s /OUT:%s >nul', vida.compiler, oname, vida.linkerFlags, libname))
-		if r ~= 0 then error('Error during link', 2) end
-		-- Save a local copy of library and source
-		if vida.saveLocalCopy then
-			os.execute(string.format('mkdir %s >nul 2>nul', vida.cachePath))
-			-- Ignore errors, likely already exists
-			r = os.execute(string.format('copy %s %s >nul', libname, locallib))
-			if r ~= 0 then error('Error saving local copy', 2) end
-			r = os.execute(string.format('copy %s %s >nul', cname, localcname))
-			if r ~= 0 then error('Error saving local copy2', 2) end
-		end
-	else
-		r = os.execute(string.format('%s %s %s -o %s', vida.compiler, vida.compilerFlags, cname, oname))
-		if r ~= 0 then error('Error during compile', 2) end
-		-- Link into shared library
-		r = os.execute(string.format('%s %s %s -o %s', vida.compiler, vida.linkerFlags, oname, libname))
-		if r ~= 0 then error('Error during link', 2) end
-		-- Save a local copy of library and source
-		if vida.saveLocalCopy then
-			r = os.execute(string.format('mkdir -p %s', vida.cachePath))
-			if r ~= 0 then error('Error creating cache path', 2) end
-			r = os.execute(string.format('cp %s %s', libname, locallib))
-			if r ~= 0 then error('Error saving local copy', 2) end
-			r = os.execute(string.format('cp %s %s', cname, localcname))
-			if r ~= 0 then error('Error saving local copy', 2) end
-		end
-	end
+    if ffi.os == 'Windows' then
+        r = os.execute(string.format('%s %s %s /Fo%s >nul', vida.compiler, vida.compilerFlags, cname, oname))
+        if r ~= 0 then error('Error during compile', 2) end
+        r = os.execute(string.format('%s %s %s /OUT:%s >nul', vida.compiler, oname, vida.linkerFlags, libname))
+        if r ~= 0 then error('Error during link', 2) end
+        -- Save a local copy of library and source
+        if vida.saveLocalCopy then
+            os.execute(string.format('mkdir %s >nul 2>nul', vida.cachePath))
+            -- Ignore errors, likely already exists
+            r = os.execute(string.format('copy %s %s >nul', libname, locallib))
+            if r ~= 0 then error('Error saving local copy', 2) end
+            r = os.execute(string.format('copy %s %s >nul', cname, localcname))
+            if r ~= 0 then error('Error saving local copy2', 2) end
+        end
+    else
+        r = os.execute(string.format('%s %s %s -o %s', vida.compiler, vida.compilerFlags, cname, oname))
+        if r ~= 0 then error('Error during compile', 2) end
+        -- Link into shared library
+        r = os.execute(string.format('%s %s %s -o %s', vida.compiler, vida.linkerFlags, oname, libname))
+        if r ~= 0 then error('Error during link', 2) end
+        -- Save a local copy of library and source
+        if vida.saveLocalCopy then
+            r = os.execute(string.format('mkdir -p %s', vida.cachePath))
+            if r ~= 0 then error('Error creating cache path', 2) end
+            r = os.execute(string.format('cp %s %s', libname, locallib))
+            if r ~= 0 then error('Error saving local copy', 2) end
+            r = os.execute(string.format('cp %s %s', cname, localcname))
+            if r ~= 0 then error('Error saving local copy', 2) end
+        end
+    end
     -- Load the shared library
     return ffi.load(libname)
 end

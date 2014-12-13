@@ -5,7 +5,7 @@ local path = {}
 
 local sep = '/'
 if ffi.os == 'Windows' then
-	sep = '\\'
+    sep = '\\'
 end
 
 function path.join(...)
