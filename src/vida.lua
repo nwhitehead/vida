@@ -18,40 +18,54 @@ vida.cachePath = '.vidacache'
 vida.compiler = 'clang'
 vida.compilerFlags = '-O3'
 
+local suffix = '.so'
+if ffi.os == 'Windows' then
+    suffix = '.dll'
+end
+
 function vida.source(interface, implementation)
     -- First interpret interface using FFI
     ffi.cdef(interface)
     local src = implementation
     local name = md5.hash(src)
     -- Check for local copy of shared library
-    local locallib = path.join(vida.cachePath, name .. ".so")
+    local locallib = path.join(vida.cachePath, ffi.os .. '-' .. name .. suffix)
     if vida.useLocalCopy then
         if file_exists(locallib) then
             return ffi.load(locallib)
         end
     end
+    -- If we don't have a compiler, bail out now
+    if not vida.compiler then
+        error('Error loading shared library, compiler disabled', 2)
+    end
     -- Create names
     local fname = os.tmpname() .. name
-    local cname = fname .. ".c"
-    local oname = fname .. ".o"
-    local libname = fname .. ".so"
-    -- Write C contents
-    -- Note: includes interface to avoid inconsistencies
+    local cname = fname .. '.c'
+    local oname = fname .. '.o'
+    local libname = fname .. suffix
+    local localcname = path.join(vida.cachePath, name .. '.c')
+    -- Write C source contents to .c file
     local file = io.open(cname, 'w')
+    if not file then
+        error(string.format('Error writing source file %s', cname), 2)
+    end
     file:write(src)
     file:close()
     -- Compile
     local r
     r = os.execute(string.format('%s %s -fpic -c %s -o %s', vida.compiler, vida.compilerFlags, cname, oname))
     if r ~= 0 then error('Error during compile', 2) end
-    -- Link to shared library
+    -- Link into shared library
     r = os.execute(string.format('%s -shared %s -o %s', vida.compiler, oname, libname))
     if r ~= 0 then error('Error during link', 2) end
-    -- Save a local copy
+    -- Save a local copy of library and source
     if vida.saveLocalCopy then
         r = os.execute(string.format('mkdir -p %s', vida.cachePath))
         if r ~= 0 then error('Error creating cache path', 2) end
         r = os.execute(string.format('cp %s %s', libname, locallib))
+        if r ~= 0 then error('Error saving local copy', 2) end
+        r = os.execute(string.format('cp %s %s', cname, localcname))
         if r ~= 0 then error('Error saving local copy', 2) end
     end
     -- Load the shared library
