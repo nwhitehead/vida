@@ -1,28 +1,7 @@
 local ffi = require('ffi')
 local vida = require('vida')
 local os = require('os')
-
--- Benchmarking
-ffi.cdef[[
-    struct timeval {
-        uint32_t sec;
-        uint64_t usec;
-    };
-    int gettimeofday(struct timeval *restrict tp, void *restrict tzp);
-]]
-
-function gettime()
-    local t = ffi.new('struct timeval')
-    ffi.C.gettimeofday(t, nil)
-    return t.sec + (tonumber(t.usec) / 1000000.0)
-end
-
-function benchmark(func, ...)
-    local t0 = gettime()
-    func(...)
-    local t1 = gettime()
-    return t1 - t0
-end
+local bench = require('bench')
 
 local fast = vida.source([[
     // C interface
@@ -106,7 +85,7 @@ for i = 0, n - 1 do
 end
 
 local reps = 1000
-print('luajit sort', 10 * benchmark(function ()
+print('luajit sort', 10 * bench.time(function ()
     for i = 1, reps / 10 do
         for i = 0, n - 1 do
             xx[i] = originalxx[i]
@@ -117,7 +96,7 @@ end))
 print(999999, xx[n - 1])
 
 local reps = 1000
-print('vector sort', benchmark(function ()
+print('vector sort', bench.time(function ()
     for i = 0, n - 1 do
         xvec[i] = originalxx[i]
     end
@@ -146,7 +125,7 @@ print(160, xvec[10])
 
 local reps = 1000
 
-print('luajit add', benchmark(function ()
+print('luajit add', bench.time(function ()
     for i = 0, reps do
         for j = 0, n - 1 do
             xvec[i] = xvec[i] + yvec[i]
@@ -154,7 +133,7 @@ print('luajit add', benchmark(function ()
     end
 end))
 
-print('luajit add (hash)', 10 * benchmark(function ()
+print('luajit add (hash)', 10 * bench.time(function ()
     for i = 0, reps / 10 do
         for j = 0, n - 1 do
             xx[i] = xx[i] + yy[i]
@@ -163,7 +142,7 @@ print('luajit add (hash)', 10 * benchmark(function ()
 end))
 
 jit.off()
-print('luajit add (hash nojit)', benchmark(function ()
+print('luajit add (hash nojit)', bench.time(function ()
     for i = 0, reps do
         for j = 0, n - 1 do
             xx[i] = xx[i] + yy[i]
@@ -173,7 +152,7 @@ end))
 jit.on()
 
 jit.off()
-print('luajit add (nojit)', 20 * benchmark(function ()
+print('luajit add (nojit)', 20 * bench.time(function ()
     for i = 0, reps / 20 do
         for j = 0, n - 1 do
             xvec[i] = xvec[i] + yvec[i]
@@ -182,7 +161,7 @@ print('luajit add (nojit)', 20 * benchmark(function ()
 end))
 jit.on()
 
-print('luajit mix', benchmark(function ()
+print('luajit mix', bench.time(function ()
     local alpha = 0.001
     for i = 0, reps do
         for j = 0, n - 1 do
@@ -191,13 +170,13 @@ print('luajit mix', benchmark(function ()
     end
 end))
 
-print('vector.add', benchmark(function ()
+print('vector.add', bench.time(function ()
     for i = 0, reps do
         vector.add(xvec, yvec, n)
     end
 end))
 
-print('vector.mix', benchmark(function ()
+print('vector.mix', bench.time(function ()
     for i = 0, reps do
         vector.mix(xvec, yvec, n, 0.001)
     end

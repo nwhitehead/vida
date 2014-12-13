@@ -4,9 +4,9 @@ function test(txt, func)
     io.write(txt, ' : ')
     local status, err = pcall(func)
     if status then
-        io.write('✓\n')
+        io.write('PASS\n')
     else
-        io.write('✗\n')
+        io.write('FAIL\n')
         error(err, 2)
     end
 end
