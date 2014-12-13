@@ -28,7 +28,7 @@ local fast = vida.source([[
 ]],
 [[
     // C implementation
-    int func(int a, int b) {
+    EXPORT int func(int a, int b) {
         return a + b;
     }
 ]])
@@ -44,6 +44,10 @@ The shared library is named using an MD5 hash of the C source code,
 opened for immediate use, then saved in a cache directory and reused in
 later runs.
 
+Functions in the implementation that will be called from LuaJIT should
+be marked `EXPORT` for maximum compatibility across all platforms (Windows
+requires this).
+
 ## Advantages
 
 There are several reasons to use Vida. 
@@ -53,9 +57,9 @@ compiled Lua code.
 * No complicated OS-specific build steps needed, everything is in Lua files.
 * No new language to learn (compare to Terra).
 * No changes to LuaJIT interpreter required.
-* Easy binary distribution of cached libraries, users don't need compiler.
+* Easy binary distribution of cached libraries, users don't need a compiler.
 * [Future work] Allows precompiles during build to support targets
-such as Android without compilers in runtime environment.
+such as Android without compilers in the runtime environment.
 
 ## Setup
 
