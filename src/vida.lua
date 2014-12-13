@@ -1,18 +1,13 @@
 local os = require('os')
 local ffi = require('ffi')
+
 local md5 = require('md5')
 local path = require('path')
 local temp = require('temp')
 
 local vida = {}
 
--- From lhf
--- http://stackoverflow.com/questions/4990990/lua-check-if-a-file-exists
-function file_exists(name)
-   local f=io.open(name,"r")
-   if f~=nil then io.close(f) return true else return false end
-end
-
+vida.version = "v0.1.0"
 vida.useLocalCopy = true
 vida.saveLocalCopy = true
 vida.cachePath = '.vidacache'
@@ -25,6 +20,15 @@ if ffi.os == 'Windows' then
     vida.linkerFlags = '/nologo /link /DLL'
 end
 
+-- Fixed header for C source to simplify exports
+vida.header = [[
+#ifdef _WIN32
+#define EXPORT __declspec(dllexport)
+#else
+#define EXPORT
+#endif
+]]
+
 -- Use .so suffix on Linux and Mac, .dll on Windows
 -- Use .o suffix on Linux and Mac, .obj on Windows
 local libsuffix = '.so'
@@ -34,14 +38,12 @@ if ffi.os == 'Windows' then
     objsuffix = '.obj'
 end
 
--- Fixed header for C source to simplify exports
-vida.header = [[
-#ifdef _WIN32
-#define EXPORT __declspec(dllexport)
-#else
-#define EXPORT
-#endif
-]]
+-- From lhf
+-- http://stackoverflow.com/questions/4990990/lua-check-if-a-file-exists
+function file_exists(name)
+   local f=io.open(name,"r")
+   if f~=nil then io.close(f) return true else return false end
+end
 
 function vida.source(interface, implementation)
     -- First interpret interface using FFI
