@@ -21,16 +21,18 @@ vida.compilerFlags = '-O3 -fpic -c'
 vida.linkerFlags = '-shared'
 if ffi.os == 'Windows' then
 	vida.compiler = 'cl'
-	vida.compilerFlags = '/nologo /O2'
-	vida.linkerFlags = '/link /DLL'
+	vida.compilerFlags = '/nologo /O2 /c'
+	vida.linkerFlags = '/nologo /link /DLL'
 end
 
 -- Use .so suffix on Linux and Mac, .dll on Windows
-local suffix = '.so'
+-- Use .o suffix on Linux and Mac, .obj on Windows
+local libsuffix = '.so'
+local objsuffix = '.o'
 if ffi.os == 'Windows' then
-    suffix = '.dll'
+    libsuffix = '.dll'
+	objsuffix = '.obj'
 end
-
 
 -- Fixed header for C source to simplify exports
 vida.header = [[
@@ -47,7 +49,7 @@ function vida.source(interface, implementation)
     local src = vida.header .. implementation
     local name = md5.hash(src)
     -- Check for local copy of shared library
-    local locallib = path.join(vida.cachePath, ffi.os .. '-' .. name .. suffix)
+    local locallib = path.join(vida.cachePath, ffi.os .. '-' .. name .. libsuffix)
     if vida.useLocalCopy then
         if file_exists(locallib) then
             return ffi.load(locallib)
@@ -60,8 +62,8 @@ function vida.source(interface, implementation)
     -- Create names
     local fname = temp.name() .. name
     local cname = fname .. '.c'
-    local oname = fname .. '.o'
-    local libname = fname .. suffix
+    local oname = fname .. objsuffix
+    local libname = fname .. libsuffix
     local localcname = path.join(vida.cachePath, name .. '.c')
     -- Write C source contents to .c file
     local file = io.open(cname, 'w')
@@ -73,9 +75,10 @@ function vida.source(interface, implementation)
     -- Compile
     local r
 	if ffi.os == 'Windows' then
-		-- Single compile+link on Windows
-		r = os.execute(string.format('%s %s %s %s /OUT:%s >nul', vida.compiler, cname, vida.compilerFlags, vida.linkerFlags, libname))
-		if r ~= 0 then error('Error during compile+link', 2) end
+		r = os.execute(string.format('%s %s %s /Fo%s >nul', vida.compiler, vida.compilerFlags, cname, oname))
+		if r ~= 0 then error('Error during compile', 2) end
+		r = os.execute(string.format('%s %s %s /OUT:%s >nul', vida.compiler, oname, vida.linkerFlags, libname))
+		if r ~= 0 then error('Error during link', 2) end
 		-- Save a local copy of library and source
 		if vida.saveLocalCopy then
 			os.execute(string.format('mkdir %s >nul 2>nul', vida.cachePath))
