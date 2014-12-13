@@ -72,7 +72,8 @@ file.
 
 ### Mac OS X
 
-Install LuaJIT, available from http://luajit.org.
+Install LuaJIT, available from http://luajit.org or precompiled in the `bin`
+directory.
 
 Make sure that clang is available from the command line. If you already
 have XCode installed then this is already true. If not, install the Command Line
