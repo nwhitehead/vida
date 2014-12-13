@@ -5,9 +5,10 @@ right from your Lua code.
 
 ## Requirements
 
-* Linux or Mac OS X
+* Works in Windows, Mac OS X, or Linux
 * LuaJIT 2.0+
-* A working copy of clang or gcc available from the command line
+* A working copy of Visual Studio (Windows),
+clang or gcc(Mac OS X and Linux), available from the command line
 
 ## How to use
 
@@ -58,13 +59,16 @@ such as Android without compilers in runtime environment.
 
 ## Setup
 
-### Linux
+### Windows
 
-Install LuaJIT, available from http://luajit.org.
+Install LuaJIT, available from http://luajit.org or precompiled in the
+`bin` directory.
 
-Make sure that clang is available from the command line. On Debian-based
-distributions such as Ubuntu this is accomplished by installing the ``clang``
-package. Any version of Clang should be compatible with Vida.
+Make sure that `cl`, the command line version of the Visual Studio compiler,
+is available from your command prompt. One way to do this is to run the
+Developer Command Prompt for Visual Studio, which has environmental
+variables set properly. From this prompt run luajit on your lua source
+file.
 
 ### Mac OS X
 
@@ -80,9 +84,17 @@ free Apple Developer account. Once you have an account, you should be
 able to download and install the Command Line Tools for XCode at
 https://developer.apple.com/downloads/index.action
 
-## Binary Distribution (Mac OS X and Windows)
+### Linux
 
-For convenient application distribution to users on Mac OS X and Windows platforms
+Install LuaJIT, available from http://luajit.org.
+
+Make sure that clang is available from the command line. On Debian-based
+distributions such as Ubuntu this is accomplished by installing the ``clang``
+package. Any version of Clang should be compatible with Vida.
+
+## Binary Distribution (Windows and Mac OS X)
+
+For convenient application distribution to users on Windows and Mac OS X platforms
 it is recommended to include precompiled shared libraries for the platform
 in the default `.vidacache` directory and turn off dynamic compilation
 with `vida.compiler = nil` before any calls to `vida.source`. This
