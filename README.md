@@ -73,7 +73,7 @@ Install LuaJIT, available from http://luajit.org.
 Make sure that clang is available from the command line. If you already
 have XCode installed then this is already true. If not, install the Command Line
 Tools. For OS X version 10.9 and newer, type the following line in Terminal
-to install the Command Line Tools: ```xcode-select --install``
+to install the Command Line Tools: `xcode-select --install`
 
 For versions of Mac OS X prior to 10.9 you will need to sign up for a
 free Apple Developer account. Once you have an account, you should be

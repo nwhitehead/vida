@@ -14,7 +14,7 @@ end
 test("allow constants", function()
     local fast = vida.source(
         'int testConstant;',
-        'int testConstant = 101;'
+        'EXPORT int testConstant = 101;'
     )
     assert(fast.testConstant == 101)
 end)
@@ -22,7 +22,7 @@ end)
 test("simple addition", function()
     local fast = vida.source(
         'int add(int, int);',
-        'int add(int a, int b) { return a+b; }'
+        'EXPORT int add(int a, int b) { return a+b; }'
     )
     assert(fast.add(3, 5) == 8)
 end)
@@ -34,10 +34,10 @@ test("multiple functions and types", function()
         uchar mult(uchar, uchar);
     ]],[[
         typedef unsigned char uchar;
-        int add(int a, int b) {
+        EXPORT int add(int a, int b) {
             return a + b;
         }
-        uchar mult(uchar x, uchar y) {
+        EXPORT uchar mult(uchar x, uchar y) {
             return x * y;
         }
     ]])

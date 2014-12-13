@@ -18,15 +18,25 @@ vida.cachePath = '.vidacache'
 vida.compiler = 'clang'
 vida.compilerFlags = '-O3'
 
+-- Use .so suffix on Linux and Mac, .dll on Windows
 local suffix = '.so'
 if ffi.os == 'Windows' then
     suffix = '.dll'
 end
 
+-- Fixed header for C source to simplify exports
+vida.header = [[
+#ifdef _WIN32
+#define EXPORT __declspec(dllexport)
+#else
+#define EXPORT
+#endif
+]]
+
 function vida.source(interface, implementation)
     -- First interpret interface using FFI
     ffi.cdef(interface)
-    local src = implementation
+    local src = vida.header .. implementation
     local name = md5.hash(src)
     -- Check for local copy of shared library
     local locallib = path.join(vida.cachePath, ffi.os .. '-' .. name .. suffix)

@@ -29,7 +29,7 @@ local fast = vida.source([[
     int func(int a, int b);
 ]], [[
     // C implementation
-    int func(int a, int b) {
+    EXPORT int func(int a, int b) {
         return a + b;
     }
 ]])
@@ -47,11 +47,11 @@ local vector = vida.source([[
 
     #include <stddef.h>
 
-    void add(int *x, int *y, size_t n) {
+    EXPORT void add(int *x, int *y, size_t n) {
         while (n--) *x++ += *y++;
     }
 
-    void mix(int *x, int *y, size_t n, float alpha) {
+    EXPORT void mix(int *x, int *y, size_t n, float alpha) {
         while (n--) {
             *x++ += (int)(alpha * (*y++));
         }
@@ -84,7 +84,7 @@ local vector = vida.source([[
         }
     }
 
-    void sort(int *list, size_t n) {
+    EXPORT void sort(int *list, size_t n) {
         quicksort_h(list, 0, n - 1);
     }
 
