@@ -7,7 +7,7 @@ local temp = require('temp')
 
 local vida = {}
 
-vida.version = "v0.1.0"
+vida.version = "v0.1.1"
 vida.useLocalCopy = true
 vida.saveLocalCopy = true
 vida.cachePath = '.vidacache'
@@ -19,9 +19,10 @@ if ffi.os == 'Windows' then
     vida.compilerFlags = '/nologo /O2 /c'
     vida.linkerFlags = '/nologo /link /DLL'
 end
+vida._prelude = ''
 
 -- Fixed header for C source to simplify exports
-vida.header = [[
+vida._header = [[
 #ifdef _WIN32
 #define EXPORT __declspec(dllexport)
 #else
@@ -38,17 +39,52 @@ if ffi.os == 'Windows' then
     objsuffix = '.obj'
 end
 
+-- Read in a file
+function read_file(name)
+    local f = io.open(name, 'r')
+    if f == nil then
+        return nil
+    end
+    local txt = f:read('*a')
+    f:close()
+    return txt
+end
+
 -- From lhf
 -- http://stackoverflow.com/questions/4990990/lua-check-if-a-file-exists
 function file_exists(name)
-   local f=io.open(name,"r")
-   if f~=nil then io.close(f) return true else return false end
+    local f = io.open(name, 'r')
+    if f ~= nil then
+        io.close(f)
+        return true
+    end
+    return false
 end
 
+-- Add new code to common C prelude
+function vida.prelude(interface, implementation)
+    ffi.cdef(interface) -- common to all shared libraries
+    vida._prelude = vida._prelude .. implementation
+end
+
+-- Compile C code from files, return FFI namespace
+function vida.sourceFiles(f_interface, f_implementation)
+    local interface = read_file(f_interface)
+    if not interface then
+        error('Could not open file ' .. f_interface .. ' for reading', 2)
+    end
+    local implementation = read_file(f_implementation)
+    if not implementation then
+        error('Could not open file ' .. f_implementation .. ' for reading', 2)
+    end
+    return vida.source(interface, implementation)
+end
+
+-- Compile C code from strings, return FFI namespace
 function vida.source(interface, implementation)
     -- First interpret interface using FFI
     ffi.cdef(interface)
-    local src = vida.header .. implementation
+    local src = vida._header .. vida._prelude .. implementation
     local name = md5.hash(src)
     -- Check for local copy of shared library
     local locallib = path.join(vida.cachePath, ffi.os .. '-' .. name .. libsuffix)
