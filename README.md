@@ -8,7 +8,7 @@ right from your Lua code.
 * Works in Windows, Mac OS X, or Linux
 * LuaJIT 2.0+
 * A working copy of Visual Studio (Windows),
-clang or gcc(Mac OS X and Linux), available from the command line
+clang or gcc (Mac OS X and Linux), available from the command line
 
 ## How to use
 
