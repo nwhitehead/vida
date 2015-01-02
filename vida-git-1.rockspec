@@ -1,9 +1,11 @@
 package = "Vida"
-version = "0.1-3"
+version = "git-1"
+
 source = {
-    url = 'https://github.com/nwhitehead/vida/archive/v0.1-3.tar.gz',
-    dir = 'vida-0.1-3'
+    url = 'git://github.com/nwhitehead/vida.git',
+    dir = 'vida'
 }
+
 description = {
     summary = "Mix C code into your LuaJIT code seamlessly.",
     detailed = [[
@@ -14,12 +16,13 @@ description = {
     homepage = "https://github.com/nwhitehead/vida",
     license = "MIT <http://opensource.org/licenses/MIT>"
 }
+
 dependencies = {
 }
+
 build = {
     type = 'builtin',
     modules = {
         vida = "output/vida.lua"
     }
 }
-
