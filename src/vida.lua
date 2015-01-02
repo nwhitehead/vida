@@ -7,19 +7,49 @@ local temp = require('temp')
 
 local vida = {}
 
-vida.version = "v0.1.1"
-vida.useLocalCopy = true
-vida.saveLocalCopy = true
-vida.cachePath = '.vidacache'
-vida.compiler = 'clang'
-vida.compilerFlags = '-O3 -fpic -c'
-vida.linkerFlags = '-shared'
-if ffi.os == 'Windows' then
-    vida.compiler = 'cl'
-    vida.compilerFlags = '/nologo /O2 /c'
-    vida.linkerFlags = '/nologo /link /DLL'
+-- Optionally update value
+local function update(old, new)
+    if new ~= nil then return new else return old end
 end
-vida._prelude = ''
+
+-- Parse bool, no error on nil
+local function toboolean(val)
+    if val == nil then return nil end
+    return val == 'true' or val == 'True' or val == 'TRUE'
+end
+
+-- Update value with environmental variable value
+local function update_env(old, name)
+    return update(old, os.getenv(name))
+end
+
+vida.version = "v0.1.2"
+vida.useLocalCopy = update_env(true, 'VIDA_READ_CACHE')
+vida.saveLocalCopy = update_env(true, 'VIDA_WRITE_CACHE')
+local home_vidacache = '.vidacache'
+local home = os.getenv('HOME')
+local libsuffix
+local objsuffix
+if ffi.os == 'Linux' or ffi.os == 'OSX' then
+    vida.compiler = update_env('clang', 'VIDA_COMPILER')
+    vida.compilerFlags = update_env('-fpic -O3 -c', 'VIDA_COMPILER_FLAGS')
+    vida.linkerFlags = update_env('-shared', 'VIDA_LINKER_FLAGS')
+    libsuffix = '.so'
+    objsuffix = '.o'
+    if home then
+        home_vidacache = string.format('%s/.vidacache', home)
+    end
+elseif ffi.os == 'Windows' then
+    vida.compiler = update_env('cl', 'VIDA_COMPILER')
+    vida.compilerFlags = update_env('/nologo /O2 /c', 'VIDA_COMPILER_FLAGS')
+    vida.linkerFlags = update_env('/nologo /link /DLL', 'VIDA_LINKER_FLAGS')
+    libsuffix = '.dll'
+    objsuffix = '.obj'
+else
+    error('Unknown platform')
+end
+vida.cachePath = update_env(home_vidacache, 'VIDA_CACHE_PATH')
+vida._prelude = update_env('', 'VIDA_PRELUDE')
 
 -- Fixed header for C source to simplify exports
 vida._header = [[
@@ -32,11 +62,7 @@ vida._header = [[
 
 -- Use .so suffix on Linux and Mac, .dll on Windows
 -- Use .o suffix on Linux and Mac, .obj on Windows
-local libsuffix = '.so'
-local objsuffix = '.o'
 if ffi.os == 'Windows' then
-    libsuffix = '.dll'
-    objsuffix = '.obj'
 end
 
 -- Read in a file
@@ -50,8 +76,7 @@ function read_file(name)
     return txt
 end
 
--- From lhf
--- http://stackoverflow.com/questions/4990990/lua-check-if-a-file-exists
+-- Check if file exists
 function file_exists(name)
     local f = io.open(name, 'r')
     if f ~= nil then
@@ -145,6 +170,5 @@ function vida.source(interface, implementation)
     -- Load the shared library
     return ffi.load(libname)
 end
-
 
 return vida

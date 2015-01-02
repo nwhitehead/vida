@@ -69,7 +69,7 @@ local vector = vida.source([[
 
 ]])
 
-print(8, fast.func(3, 5))
+assert(8 == fast.func(3, 5))
 
 local n = 10000
 local xvec = ffi.new('int[?]', n)
@@ -84,30 +84,30 @@ for i = 0, n - 1 do
     originalxx[i] = xx[i]
 end
 
-local reps = 1000
-print('luajit sort', 10 * bench.time(function ()
-    for i = 1, reps / 10 do
-        for i = 0, n - 1 do
-            xx[i] = originalxx[i]
-        end
-        table.sort(xx)
-    end
-end))
-print(999999, xx[n - 1])
+local function ms(v)
+    return string.format('%s ms', v * 1000)
+end
 
-local reps = 1000
-print('vector sort', bench.time(function ()
-    for i = 0, n - 1 do
-        xvec[i] = originalxx[i]
-    end
-    for i = 1, reps do
-        vector.sort(xvec, n)
-    end
-end))
-print(999999, xvec[n - 1])
+local t = 0.5
+
+for i = 0, n - 1 do
+    xx[i] = originalxx[i]
+end
+print('luajit sort', ms(bench.smart(t, function ()
+    table.sort(xx)
+end)))
+assert(xx[n - 1] == 999999) -- spot check output
+
+for i = 0, n - 1 do
+    xvec[i] = originalxx[i]
+end
+print('vector sort', ms(bench.smart(t, function ()
+    vector.sort(xvec, n)
+end)))
+assert(xvec[n - 1] == 999999) -- spot check output
 
 
-local n = 100000
+local n = 10000
 local xvec = ffi.new('int[?]', n)
 local yvec = ffi.new('int[?]', n)
 local xx = {}
@@ -119,65 +119,50 @@ for i = 0, n-1 do
     yy[i] = i * i
 end
 vector.add(xvec, yvec, n)
-print(110, xvec[10])
+assert(110 == xvec[10])
 vector.mix(xvec, yvec, n, 0.5)
-print(160, xvec[10])
+assert(160 == xvec[10])
 
-local reps = 1000
-
-print('luajit add', bench.time(function ()
-    for i = 0, reps do
-        for j = 0, n - 1 do
-            xvec[i] = xvec[i] + yvec[i]
-        end
+print('luajit add (cdata)', ms(bench.smart(t, function ()
+    for j = 0, n - 1 do
+        xvec[j] = xvec[j] + yvec[j]
     end
-end))
+end)))
 
-print('luajit add (hash)', 10 * bench.time(function ()
-    for i = 0, reps / 10 do
-        for j = 0, n - 1 do
-            xx[i] = xx[i] + yy[i]
-        end
+print('luajit add (hash)', ms(bench.smart(t, function ()
+    for j = 0, n - 1 do
+        xx[j] = xx[j] + yy[j]
     end
-end))
+end)))
 
 jit.off()
-print('luajit add (hash nojit)', bench.time(function ()
-    for i = 0, reps do
-        for j = 0, n - 1 do
-            xx[i] = xx[i] + yy[i]
-        end
+print('luajit add (hash nojit)', ms(bench.smart(t, function ()
+    for j = 0, n - 1 do
+        xx[j] = xx[j] + yy[j]
     end
-end))
+end)))
 jit.on()
 
 jit.off()
-print('luajit add (nojit)', 20 * bench.time(function ()
-    for i = 0, reps / 20 do
-        for j = 0, n - 1 do
-            xvec[i] = xvec[i] + yvec[i]
-        end
+print('luajit add (nojit)', ms(bench.smart(t, function ()
+    for j = 0, n - 1 do
+        xvec[j] = xvec[j] + yvec[j]
     end
-end))
+end)))
 jit.on()
 
-print('luajit mix', bench.time(function ()
+print('vector.add', ms(bench.smart(t, function ()
+    vector.add(xvec, yvec, n)
+end)))
+
+print('luajit mix', ms(bench.smart(t, function ()
     local alpha = 0.001
-    for i = 0, reps do
-        for j = 0, n - 1 do
-            xvec[i] = xvec[i] + alpha * yvec[i]
-        end
+    for j = 0, n - 1 do
+        xvec[j] = xvec[j] + alpha * yvec[j]
     end
-end))
+end)))
 
-print('vector.add', bench.time(function ()
-    for i = 0, reps do
-        vector.add(xvec, yvec, n)
-    end
-end))
-
-print('vector.mix', bench.time(function ()
-    for i = 0, reps do
-        vector.mix(xvec, yvec, n, 0.001)
-    end
-end))
+print('vector.mix', ms(bench.smart(t, function ()
+    local alpha = 0.001
+    vector.mix(xvec, yvec, n, alpha)
+end)))
