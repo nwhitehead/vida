@@ -1,3 +1,9 @@
+-- Requires LuaJIT
+
+if type(jit) ~= 'table' then
+    error('This modules requires LuaJIT')
+end
+
 local os = require('os')
 local ffi = require('ffi')
 
