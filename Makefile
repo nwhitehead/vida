@@ -10,7 +10,7 @@ unittest: output/vida.lua
 	cd test && \
 		LUA_PATH="../output/?.lua;../tools/?.lua" luajit test_vida.lua
 
-demo: unittest demo
+demo:
 	cd test && \
 		LUA_PATH="../output/?.lua;../tools/?.lua;./?.lua" luajit demo.lua
 
