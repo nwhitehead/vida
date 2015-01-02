@@ -38,8 +38,9 @@ local home = os.getenv('HOME')
 local libsuffix
 local objsuffix
 if ffi.os == 'Linux' or ffi.os == 'OSX' then
-    vida.compiler = update_env('clang', 'VIDA_COMPILER')
-    vida.compilerFlags = update_env('-fpic -O3 -fvisibility=hidden -c', 'VIDA_COMPILER_FLAGS')
+    vida.compiler = update_env(update_env('clang', 'CC'), 'VIDA_COMPILER')
+    vida.compilerFlags = update_env('-fpic -O3 -fvisibility=hidden', 'VIDA_COMPILER_FLAGS')
+    vida.justCompile = '-c'
     vida.linkerFlags = update_env('-shared', 'VIDA_LINKER_FLAGS')
     libsuffix = '.so'
     objsuffix = '.o'
@@ -48,7 +49,8 @@ if ffi.os == 'Linux' or ffi.os == 'OSX' then
     end
 elseif ffi.os == 'Windows' then
     vida.compiler = update_env('cl', 'VIDA_COMPILER')
-    vida.compilerFlags = update_env('/nologo /O2 /c', 'VIDA_COMPILER_FLAGS')
+    vida.compilerFlags = update_env('/nologo /O2', 'VIDA_COMPILER_FLAGS')
+    vida.justCompile = '/c'
     vida.linkerFlags = update_env('/nologo /link /DLL', 'VIDA_LINKER_FLAGS')
     libsuffix = '.dll'
     objsuffix = '.obj'
@@ -239,7 +241,7 @@ function vida.compile(...)
     -- Compile
     local r
     if ffi.os == 'Windows' then
-        r = os.execute(string.format('%s %s %s /Fo%s >nul', vida.compiler, vida.compilerFlags, cname, oname))
+        r = os.execute(string.format('%s %s %s %s /Fo%s >nul', vida.compiler, vida.compilerFlags, vida.justComile, cname, oname))
         if r ~= 0 then error('Error during compile', 2) end
         r = os.execute(string.format('%s %s %s /OUT:%s >nul', vida.compiler, oname, vida.linkerFlags, libname))
         if r ~= 0 then error('Error during link', 2) end
@@ -253,7 +255,7 @@ function vida.compile(...)
             if r ~= 0 then error('Error saving local copy2', 2) end
         end
     else
-        r = os.execute(string.format('%s %s %s -o %s', vida.compiler, vida.compilerFlags, cname, oname))
+        r = os.execute(string.format('%s %s %s %s -o %s', vida.compiler, vida.compilerFlags, vida.justCompile, cname, oname))
         if r ~= 0 then error('Error during compile', 2) end
         -- Link into shared library
         r = os.execute(string.format('%s %s %s -o %s', vida.compiler, vida.linkerFlags, oname, libname))
