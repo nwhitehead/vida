@@ -8,11 +8,11 @@ install: output/vida.lua
 
 unittest: output/vida.lua
 	cd test && \
-		LUA_PATH="../output/?.lua" luajit test_vida.lua
+		LUA_PATH="../output/?.lua;../tools/?.lua" luajit test_vida.lua
 
 demo: unittest demo
 	cd test && \
-		LUA_PATH="../output/?.lua;./?.lua" luajit demo.lua
+		LUA_PATH="../output/?.lua;../tools/?.lua;./?.lua" luajit demo.lua
 
 test: unittest demo
 

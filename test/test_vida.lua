@@ -22,10 +22,9 @@ test('call prelude', function()
 end)
 
 test('allow constants', function()
-    local fast = vida.source(
-        'int testConstant;',
-        'EXPORT int testConstant = 101;'
-    )
+    local fast = vida.compile(
+        vida.code[[EXPORT int testConstant = 101;]],
+        vida.interface[[int testConstant;]])
     assert(fast.testConstant == 101)
 end)
 

@@ -10,6 +10,7 @@ local ffi = require('ffi')
 local md5 = require('md5')
 local path = require('path')
 local temp = require('temp')
+local inspect = require('inspect')
 
 local vida = {}
 
@@ -59,6 +60,7 @@ vida._prelude = update_env('', 'VIDA_PRELUDE')
 
 -- Fixed header for C source to simplify exports
 vida._header = [[
+#line 0 "vida_header"
 #ifdef _WIN32
 #define EXPORT __declspec(dllexport)
 #else
@@ -93,29 +95,64 @@ function file_exists(name)
 end
 
 -- Add new code to common C prelude
-function vida.prelude(interface, implementation)
+function vida.prelude(interface, implementation, info)
     ffi.cdef(interface) -- common to all shared libraries
-    vida._prelude = vida._prelude .. implementation
+    if info then
+        -- Add caller filename and line numbers for debugging
+        local caller = debug.getinfo(2)
+        vida._prelude = string.format('%s#line %d "%s"\n%s\n', 
+            vida._prelude, caller.currentline or 0, caller.short_src,
+            implementation)
+    else
+        vida._prelude = string.format('%s#line 0 "prelude"\n%s\n', 
+            vida._prelude, implementation)
+    end
 end
 
 -- Compile C code from files, return FFI namespace
-function vida.sourceFiles(f_interface, f_implementation)
-    local interface = read_file(f_interface)
-    if not interface then
-        error('Could not open file ' .. f_interface .. ' for reading', 2)
+function vida.sourceFiles(f_implementation, f_interface)
+    if f_interface then
+        local interface = read_file(f_interface)
+        if not interface then
+            error('Could not open file ' .. f_interface .. ' for reading', 2)
+        end
     end
     local implementation = read_file(f_implementation)
     if not implementation then
         error('Could not open file ' .. f_implementation .. ' for reading', 2)
     end
-    return vida.source(interface, implementation)
+    return vida.source(implementation, interface)
+end
+
+-- Give C header interface information
+function vida.interface(txt, namespace)
+    ffi.cdef(txt)
 end
 
 -- Compile C code from strings, return FFI namespace
-function vida.source(interface, implementation)
-    -- First interpret interface using FFI
-    ffi.cdef(interface)
-    local src = vida._header .. vida._prelude .. implementation
+function vida.source(implementation, interface, info)
+    -- Put together source string
+    local src
+    if info == true or info == nil then
+        -- Get filename and linenumber of caller
+        -- This helps us give good error messages when compiling
+        local caller = debug.getinfo(2)
+        --    print(caller.short_src, caller.currentline)
+        -- Add caller filename and line numbers for debugging
+        local caller = debug.getinfo(2)
+        src = string.format('%s%s#line %d "%s"\n%s\n', 
+            vida._header, vida._prelude,
+            (caller.currentline or 0) + 1, caller.short_src,
+            implementation)
+    else
+        -- Setting info to false can help with caching
+        src = vida._header .. vida._prelude .. implementation
+    end
+    -- Interpret interface using FFI
+    -- (Do this first in case there is an error here)
+    if interface then
+        ffi.cdef(interface)
+    end
     local name = md5.hash(src)
     -- Check for local copy of shared library
     local locallib = path.join(vida.cachePath, ffi.os .. '-' .. name .. libsuffix)
