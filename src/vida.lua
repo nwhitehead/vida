@@ -30,7 +30,7 @@ local function update_env(old, name)
     return update(old, os.getenv(name))
 end
 
-vida.version = "v0.1.2"
+vida.version = "v0.1.3"
 vida.useLocalCopy = update_env(true, 'VIDA_READ_CACHE')
 vida.saveLocalCopy = update_env(true, 'VIDA_WRITE_CACHE')
 local home_vidacache = '.vidacache'
@@ -39,7 +39,7 @@ local libsuffix
 local objsuffix
 if ffi.os == 'Linux' or ffi.os == 'OSX' then
     vida.compiler = update_env('clang', 'VIDA_COMPILER')
-    vida.compilerFlags = update_env('-fpic -O3 -c', 'VIDA_COMPILER_FLAGS')
+    vida.compilerFlags = update_env('-fpic -O3 -fvisibility=hidden -c', 'VIDA_COMPILER_FLAGS')
     vida.linkerFlags = update_env('-shared', 'VIDA_LINKER_FLAGS')
     libsuffix = '.so'
     objsuffix = '.o'
@@ -56,22 +56,20 @@ else
     error('Unknown platform')
 end
 vida.cachePath = update_env(home_vidacache, 'VIDA_CACHE_PATH')
-vida._prelude = update_env('', 'VIDA_PRELUDE')
+vida._code_prelude = update_env('', 'VIDA_CODE_PRELUDE')
+vida._interface_prelude = update_env('', 'VIDA_INTERFACE_PRELUDE')
 
 -- Fixed header for C source to simplify exports
-vida._header = [[
+vida._code_header = [[
 #line 0 "vida_header"
 #ifdef _WIN32
 #define EXPORT __declspec(dllexport)
 #else
-#define EXPORT
+#define EXPORT __attribute__ ((visibility ("default")))
 #endif
 ]]
 
--- Use .so suffix on Linux and Mac, .dll on Windows
--- Use .o suffix on Linux and Mac, .obj on Windows
-if ffi.os == 'Windows' then
-end
+vida.cdef = ffi.cdef
 
 -- Read in a file
 function read_file(name)
@@ -94,63 +92,123 @@ function file_exists(name)
     return false
 end
 
--- Add new code to common C prelude
-function vida.prelude(interface, implementation, info)
-    ffi.cdef(interface) -- common to all shared libraries
-    if info then
-        -- Add caller filename and line numbers for debugging
-        local caller = debug.getinfo(2)
-        vida._prelude = string.format('%s#line %d "%s"\n%s\n', 
-            vida._prelude, caller.currentline or 0, caller.short_src,
-            implementation)
-    else
-        vida._prelude = string.format('%s#line 0 "prelude"\n%s\n', 
-            vida._prelude, implementation)
-    end
-end
-
--- Compile C code from files, return FFI namespace
-function vida.sourceFiles(f_implementation, f_interface)
-    if f_interface then
-        local interface = read_file(f_interface)
-        if not interface then
-            error('Could not open file ' .. f_interface .. ' for reading', 2)
-        end
-    end
-    local implementation = read_file(f_implementation)
-    if not implementation then
-        error('Could not open file ' .. f_implementation .. ' for reading', 2)
-    end
-    return vida.source(implementation, interface)
-end
-
--- Give C header interface information
-function vida.interface(txt, namespace)
-    ffi.cdef(txt)
-end
-
--- Compile C code from strings, return FFI namespace
-function vida.source(implementation, interface, info)
-    -- Put together source string
-    local src
+-- Give C header interface
+function vida.interface(txt, info)
+    local res = {
+        vida = 'interface',
+        code = txt,
+        filename = 'vida_interface',
+        linenum = 1,
+    }
     if info == true or info == nil then
         -- Get filename and linenumber of caller
         -- This helps us give good error messages when compiling
-        local caller = debug.getinfo(2)
-        --    print(caller.short_src, caller.currentline)
         -- Add caller filename and line numbers for debugging
         local caller = debug.getinfo(2)
-        src = string.format('%s%s#line %d "%s"\n%s\n', 
-            vida._header, vida._prelude,
-            (caller.currentline or 0) + 1, caller.short_src,
-            implementation)
-    else
-        -- Setting info to false can help with caching
-        src = vida._header .. vida._prelude .. implementation
+        res.filename = caller.short_src
+        res.linenum = caller.currentline
     end
+    return res
+end
+
+-- Give C source code
+function vida.code(txt)
+    local res = {
+        vida='code',
+        code=txt,
+        filename = 'vida_code',
+        linenum = 1,
+    }
+    if info == true or info == nil then
+        -- Get filename and linenumber of caller
+        -- This helps us give good error messages when compiling
+        -- Add caller filename and line numbers for debugging
+        local caller = debug.getinfo(2)
+        res.filename = caller.short_src
+        res.linenum = caller.currentline
+    end
+    return res
+end
+
+-- Give interface file
+function vida.interfacefile(filename)
+    local interface = read_file(filename)
+    if not interface then
+        error('Could not open file ' .. filename .. ' for reading', 2)
+    end
+    return {
+        vida='interface',
+        code=interface,
+        filename = filename,
+        linenum = 1,
+    }
+end
+
+-- Give source code file
+function vida.codefile(filename)
+    local src = read_file(filename)
+    if not src then
+        error('Could not open file ' .. filename .. ' for reading', 2)
+    end
+    return {
+        vida='code',
+        code=src,
+        filename = filename,
+        linenum = 1,
+    }
+end
+
+-- Add code or interface to common prelude
+function vida.prelude(...)
+    local args = {...}
+    -- Put together source string
+    local srcs = { vida._code_prelude }
+    local ints = { vida._interface_prelude }
+    for k, v in ipairs(args) do
+        if not type(v) == 'table' then
+            error('Argument ' .. k .. ' to prelude not Vida code or interface', 2)
+        end
+        if v.vida == 'code' then
+            srcs[#srcs + 1] = string.format('#line %d "%s"', v.linenum, v.filename)
+            srcs[#srcs + 1] = v.code
+        elseif v.vida == 'interface' then
+            ints[#ints + 1] = v.code
+        else
+            error('Argument ' .. k .. ' to prelude not Vida code or interface', 2)
+        end
+    end
+    vida._code_prelude = table.concat(srcs, '\n')
+    vida._interface_prelude = table.concat(ints, '\n')
+end
+
+-- Given chunks of C code and interfaces, return working FFI namespace
+function vida.compile(...)
+    local args = {...}
+    -- Put together source string
+    local srcs = { vida._code_header, vida._code_prelude }
+    local ints = { vida._interface_prelude }
+    for k, v in ipairs(args) do
+        if type(v) == 'string' then
+            -- Assume code
+            local caller = debug.getinfo(2)
+            srcs[#srcs + 1] = string.format('#line %d "%s"', caller.currentline, caller.short_src)
+            srcs[#srcs + 1] = v
+        elseif type(v) ~= 'table' then
+            error('Argument ' .. k .. ' to compile not Vida code or interface', 2)
+        elseif v.vida == 'code' then
+            srcs[#srcs + 1] = string.format('#line %d "%s"', v.linenum, v.filename)
+            srcs[#srcs + 1] = v.code
+        elseif v.vida == 'interface' then
+            ints[#ints + 1] = v.code
+        else
+            error('Argument ' .. k .. ' to compile not Vida code or interface', 2)
+        end
+    end
+    local src = table.concat(srcs, '\n')
+    local interface = table.concat(ints, '\n')
     -- Interpret interface using FFI
     -- (Do this first in case there is an error here)
-    if interface then
+    if interface ~= '' then
         ffi.cdef(interface)
     end
     local name = md5.hash(src)

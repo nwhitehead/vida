@@ -3,26 +3,23 @@ local vida = require('vida')
 local os = require('os')
 local bench = require('bench')
 
-local fast = vida.source([[
-    // C interface
+local fast = vida.compile(
+    vida.interface [[
     int func(int a, int b);
-]], [[
-    // C implementation
+]], vida.code [[
     EXPORT int func(int a, int b) {
         return a + b;
     }
 ]])
 
-local vector = vida.source([[
+local vector = vida.compile(
+    vida.interface [[
 
-    // C interface
     void add(int *, int *, size_t);
     void mix(int *, int *, size_t, float);
     void sort(int *, size_t);
 
-]], [[
-
-    // C implementation
+]], vida.code [[
 
     #include <stddef.h>
 

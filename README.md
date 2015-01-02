@@ -12,7 +12,7 @@ clang or gcc (Mac OS X and Linux), available from the command line
 
 ## How to use
 
-You include the Vida module as normal. Call `vida.source` to provide
+You include the Vida module as normal. Call `vida.compile` to provide
 C code together with a C interface that will be passed along to
 FFI. The return value will be the FFI namespace of the loaded dynamic
 library.
@@ -22,31 +22,32 @@ Example:
 ```lua
 local vida = require('vida')
 
-local fast = vida.source([[
-    // C interface
-    int func(int a, int b);
-]],
-[[
-    // C implementation
-    EXPORT int func(int a, int b) {
-        return a + b;
-    }
-]])
+local fast = vida.compile(
+    vida.interface [[
+        // C interface
+        int func(int, int);
+    ]],
+    vida.code [[
+        // C implementation
+        EXPORT int func(int a, int b) {
+            return a + b;
+        }
+    ]])
 
-print(fast.func(3, 5)) -- should print out 8
+print(fast.func(3, 5)) -- prints out 8
 ```
 
 ## How it works
 
-Each call to `vida.source` builds a new shared library using clang
+Each call to `vida.compile` builds a new shared library using clang
 (or other compiler) called from the command line with appropriate arguments.
 The shared library is named using an MD5 hash of the C source code,
 opened for immediate use, then saved in a cache directory and reused in
 later runs.
 
-Functions in the implementation that will be called from LuaJIT should
-be marked `EXPORT` for maximum compatibility across all platforms (Windows
-requires this).
+Functions in the implementation that will be called from LuaJIT need to
+be marked `EXPORT` so that the symbol is made public. Functions
+and symbols not marked with `EXPORT` are private.
 
 ## Advantages
 
@@ -65,19 +66,17 @@ such as Android without compilers in the runtime environment.
 
 ### Windows
 
-Install LuaJIT, available from http://luajit.org or precompiled in the
-`bin` directory.
+Install LuaJIT, available from http://luajit.org.
 
 Make sure that `cl`, the command line version of the Visual Studio compiler,
 is available from your command prompt. One way to do this is to run the
 Developer Command Prompt for Visual Studio, which has environmental
-variables set properly. From this prompt run luajit on your lua source
+variables set properly. From this prompt run `luajit` on your lua source
 file.
 
 ### Mac OS X
 
-Install LuaJIT, available from http://luajit.org or precompiled in the `bin`
-directory.
+Install LuaJIT, available from http://luajit.org.
 
 Make sure that clang is available from the command line. If you already
 have XCode installed then this is already true. If not, install the Command Line
@@ -101,9 +100,14 @@ package. Any version of Clang should be compatible with Vida.
 
 For convenient application distribution to users on Windows and Mac OS X platforms
 it is recommended to include precompiled shared libraries for the platform
-in the default `.vidacache` directory and turn off dynamic compilation
-with `vida.compiler = nil` before any calls to `vida.source`. This
+in a `.vidacache` directory and turn off dynamic compilation
+with `vida.compiler = nil` before any calls to `vida.compile`. This
 forces Vida to use provided shared libraries or throw an error if there
 is a problem loading them. Note that in this scenario you will also
 likely be providing a precompiled binary version of `luajit` or
 `luajit.exe` as well.
+
+## Single File Module
+
+There is a small build step to provide the `vida` module in a single
+file. Do `make` to create the single-file module in `output/`.
