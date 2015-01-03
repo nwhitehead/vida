@@ -2,14 +2,14 @@
 
 set -e
 
-release=$1
+release=v$1
 echo "Releasing " $release
 
 cp vida-git-1.rockspec vida-$release.rockspec
 repo='git:\/\/github.com\/nwhitehead\/vida\.git'
 newrepo="https:\/\/github.com\/nwhitehead\/vida\/archive\/$release.tar.gz"
 dir="\'vida\'"
-newdir="\'vida-$release\'"
+newdir="\'vida-$1\'"
 
 echo $repo
 perl -p -e "s/git-./$1/g" < vida-git-1.rockspec \
@@ -18,4 +18,5 @@ perl -p -e "s/git-./$1/g" < vida-git-1.rockspec \
     > vida-$release.rockspec
 
 git tag $release
+git push origin $release
 luarocks upload vida-$release.rockspec
