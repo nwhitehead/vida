@@ -39,7 +39,11 @@ print(fast.func(3, 5)) -- prints out 8
 
 ## Getting it
 
-You can install vida using luarocks:
+Vida is a single Lua source file `vida.lua` (available in the `output`
+directory in the repository) that you can copy to `/usr/local/share/lua/5.1`
+or wherever else you keep your Lua modules.
+
+You can also install vida using luarocks:
 ```
 sudo luarocks install vida
 ```
