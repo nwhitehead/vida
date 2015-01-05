@@ -30,7 +30,7 @@ local function update_env(old, name)
     return update(old, os.getenv(name))
 end
 
-vida.version = "v0.1.3"
+vida.version = "v0.1.8"
 vida.useLocalCopy = update_env(true, 'VIDA_READ_CACHE')
 vida.saveLocalCopy = update_env(true, 'VIDA_WRITE_CACHE')
 local home_vidacache = '.vidacache'
