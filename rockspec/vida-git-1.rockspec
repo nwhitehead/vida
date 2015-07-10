@@ -1,5 +1,5 @@
 package = "Vida"
-version = "git-scm"
+version = "git-1"
 
 source = {
     url = 'git://github.com/nwhitehead/vida.git',
