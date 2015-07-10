@@ -12,7 +12,7 @@ dir="\'vida\'"
 newdir="\'vida-$1\'"
 
 echo $repo
-perl -p -e "s/scm/$release/g" < vida-scm.rockspec \
+perl -p -e "s/git-scm/$release/g" < vida-scm.rockspec \
    | perl -p -e "s/$repo/$newrepo/g" \
    | perl -p -e "s/$dir/$newdir/g" \
     > vida-$release.rockspec
