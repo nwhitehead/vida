@@ -101,7 +101,7 @@ to install the Command Line Tools: `xcode-select --install`
 For versions of Mac OS X prior to 10.9 you will need to sign up for a
 free Apple Developer account. Once you have an account, you should be
 able to download and install the Command Line Tools for XCode at
-https://developer.apple.com/downloads/index.action
+https://developer.apple.com/download/more/
 
 ### Linux
 
